@@ -1,0 +1,35 @@
+body{background-color: #c9f5cc}
+
+#register{width: 600px; margin: auto}
+h1{text-align: center; color: #941973}
+#mid{text-align: center; min-height: 20px}
+
+#room{width: 310px; margin: auto}
+h1{text-align: center; color: #941973}
+#mid1{text-align: center; min-height: 510px; background:#f5e2df}
+#listRoomsOnline{text-align: center; font-weight: bold}
+#titleRoom{background-color: #1df224; text-align: center; padding: 5px; font-weight: bold}
+
+
+#chat{width: 600px; margin: auto}
+h1{text-align: center; color: #941973}
+#left, #right{min-height: 510px; float: left; margin-top: 10px}
+#left{width: 30%; background:#f5e2df}
+#right{width: 70%; background-color: #ffffff}
+#txtMessage, #btnChat{float: left; margin: 2px}
+#txtMessage{width: 70%}
+#btnChat{width: 20%;}
+#title{background-color: #1df224; text-align: center; padding: 5px; font-weight: bold}
+#dsMsg{height: 450px; overflow: scroll; clear: both}
+#hello{background-color: #e7ed79; text-align: center; padding: 5px; color : green; font-weight: bold}
+#icon1{float: right; margin: 1px; color: red}
+#icon2{float: right; margin: 1px; color: blue}
+#listUsersOnline{text-align: center; font-weight: bold}
+
+.block{width: 100%; clear: both,}
+.hoten{color: #2924c7; font-weight: bold}
+.notify{color: #8c8e91; font-weight: bold}
+.ic1{color: red}
+.ic2{color: blue}
+.nameOnline{color: #178a21; font-weight: bold; text-align: center}
+.roomOnline{color: #178a21; font-weight: bold; text-align: center}

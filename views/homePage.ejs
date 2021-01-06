@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>CHAT ROOM</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="jquery-3.4.1.min.js"></script>
+    <script>
+
+      var ic1 = "<span class='ic1'>" + "<i class='fa fa-heart'></i>" + "</span>";
+      var ic2 = "<span class='ic2'>" + "<i class='glyphicon glyphicon-thumbs-up'></i>" + "</span>";
+
+      var socket = io("http://localhost:3000");//gọi lên tổng đài :v
+
+      // thông báo đăng nhập thất bại
+      socket.on("server_send_signed_failure", function(data){
+        alert("User " + data + " is not availble");          //khi khách hàng nhập Username bị trùng
+      });
+
+      // khi đăng nhập thành công, hiện giao diện chọn room
+      socket.on("server_send_signed_success_simple", function() {
+        $("#register").hide(1000);
+        $("#room").show(1000);
+        $("#chat").hide();
+      });     
+
+      // khi co phòng vừa tạo, cập nhật lại danh sách phòng đang online
+      socket.on("server_send_signed_success1", function(data){
+        $("#listRoomsOnline").html("");
+        data.forEach(function(i) {
+          var roomOnline = "<span class='roomOnline'>" + i[0] + "</span>";
+          $("#listRoomsOnline").append("<div class='user1'>" + roomOnline + "</div");
+        });
+      });  
+
+      // người dùng tham gia 1 phòng, hiện giao diện chat
+      socket.on("server_send_signed_success_simple1", function(data) {
+        $("#nowUser").html(data.Name);
+        $("#nowRoom").html(data.Room);
+        $("#register").hide();
+        $("#room").hide(1000);
+        $("#chat").show(1000);
+      });      
+
+      // khi tham gia phòng chat, Xử lý và hiện những người đang online trong phòng 
+      socket.on("server_send_user_online",function(data){
+        // thong bao xxx tham gia cuoc tro chuyen
+        var noti = "<span class='notify'>*" + data[data.length-1] + " đã tham gia cuộc trò chuyện*</span>";
+        $("#dsMsg").append(noti + "<div class='block'></div>");
+
+        // them xxx vao danh sach nguoi online
+        $("#listUsersOnline").empty();
+        for (var i = 1; i < data.length; i++) {
+          var userRoomOnline = "<span class='userRoomOnline'>" + data[i]+ "</span>";
+          $("#listUsersOnline").append("<div class='"+data[i]+"'>" + userRoomOnline + "</div");
+        }
+        
+      });
+
+      // khi có người trong phòng offline,
+      socket.on("user_offline",function(data, data2){
+        // cập nhật những người online còn lại
+        $("#listUsersOnline").empty();
+        for (var i = 1; i < data.length; i++) {
+          var userRoomOnline = "<span class='userRoomOnline'>" + data[i]+ "</span>";
+          $("#listUsersOnline").append("<div class='"+data[i]+"'>" + userRoomOnline + "</div");
+        }
+
+        // thông báo user_x đã thoát
+        var noti = "<span class='notify'>*" + data2 + " đã thoát khỏi cuộc trò chuyện*</span>";
+        $("#dsMsg").append(noti + "<div class='block'></div>");
+      });
+
+      // khi gửi tin nhắn
+      socket.on("server_send_message", function(data){
+
+        var arrFail = ['chó', 'shit', 'ngu', 'dm', 'vcl', 'vcc'];
+
+        var hoten = "<span class='hoten'>" + data.Username + ": </span>";
+
+        var msg = data.msg;
+        var msgEnd = "";
+        var msgArr = msg.split(" ");
+        
+        // nếu tin nhắn là từ cấm -> in ra ***
+        for (var i = 0; i < msgArr.length; i++) {
+          for (var j = 0; j < arrFail.length; j++) {
+            if (msgArr[i] == arrFail[j]) {
+              msgArr[i] = "***";
+            }
+          }
+        }
+
+        // nếu gửi <3 hoặc (y) thì in ra icon
+        for (var i = 0; i < msgArr.length; i++) {
+          if (msgArr[i] == "<3") {
+            msgArr[i] = ic1;
+          }
+          if (msgArr[i] == "(y)") {
+            msgArr[i] = ic2;
+          }
+        }
+
+        // else thêm tin nhắn gửi vào danh sách tin nhắn
+        // user_x: messenger
+        for (var i = 0; i < msgArr.length; i++) {
+          msgEnd += msgArr[i] + " ";
+        }
+
+        $("#dsMsg").append(hoten + msgEnd + "<div class='block'></div>");
+
+      });
+
+      // send icon 1
+      socket.on("server_send_icon1", function(data) {
+        var hoten = "<span class='hoten'>" + data + ": </span>";
+        $("#dsMsg").append(hoten + ic1 + "<div class='block'></div>");
+      });
+      // send icon 2
+      socket.on("server_send_icon2", function(data) {
+        var hoten = "<span class='hoten'>" + data + ": </span>";
+        $("#dsMsg").append(hoten + ic2 + "<div class='block'></div>");
+      });
+
+      
+      $(document).ready(function(){
+
+        // khi mới truy cập web chat -> hiện giao diện đăng nhập
+        $("#register").show();
+        $("#room").hide();
+        $("#chat").hide();
+
+        // đăng nhập vào hệ thống = (click buttom "signed") || (press "enter")
+        $("#btnSigned").click(function(){
+          if ($("#txtUser").val() != "") {
+            socket.emit("client_send_username", $("#txtUser").val());// lấy dữ liệu gửi lên sever
+            $("#txtUser").val("");
+          }         
+        });
+        $(document).keypress(function(event) {
+          var keycode = (event.keyCode ? event.keyCode : event.which);
+          if (keycode == '13') {
+            if ($("#txtUser").val() != "") {
+              socket.emit("client_send_username", $("#txtUser").val());
+              $("#txtUser").val("");
+            }
+          }
+        });
+
+        // tạo hoặc tham gia phòng chat = (click buttom "create") || (press "enter")
+        $("#btnCreate").click(function(){
+          if ($("#txtRoom").val() != "") {
+            socket.emit("client_send_roomname", $("#txtRoom").val());// lấy dữ liệu gửi lên sever
+            $("#txtRoom").val("");
+          }         
+        });
+        $(document).keypress(function(event) {
+          var keycode = (event.keyCode ? event.keyCode : event.which);
+          if (keycode == '13') {
+            if ($("#txtRoom").val() != "") {
+              socket.emit("client_send_roomname", $("#txtRoom").val());
+              $("#txtRoom").val("");
+            }
+          }
+        });
+
+        // gửi tin nhắn = (click buttom "chat") || (press enter)
+        $("#btnChat").click(function(){
+            if ($("#txtMessage").val() != "") {
+              socket.emit("client_send_message", $("#txtMessage").val());
+              $("#txtMessage").val("");
+            }
+        });
+        $(document).keypress(function(event) {
+          var keycode = (event.keyCode ? event.keyCode : event.which);
+          if (keycode == '13') {
+            if ($("#txtMessage").val() != "") {
+              socket.emit("client_send_message", $("#txtMessage").val());
+              $("#txtMessage").val("");
+            }
+          }
+        });
+
+        // send icon
+        $("#icon1").click(function(){
+              socket.emit("client_send_icon1");
+        });
+        $("#icon2").click(function(){
+              socket.emit("client_send_icon2");
+        });        
+      });
+
+    </script>
+    <link rel="stylesheet"href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet"href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="main.css" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
+    <style>
+    #toggle {
+      width: 100px;
+      height: 100px;
+      background: #ccc;
+    }
+    </style>
+    <script src="//code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
+</head>
+<body>
+
+    <!-- GIAO DIỆN CHAT -->
+    <div id="chat">
+      <h1>WELCOME TO SUMMONER'S RIFT</h1>
+      <div class="block"></div>
+      <!-- Bên trái có tên phòng + danh sách phòng online -->
+      <div id="left">
+        <div id="title">ROOM : <span id="nowRoom"></span></div>
+        <div id="listUsersOnline"></div>
+      </div>
+      <!-- Bên phải có User_Name + Danh sách tin nhắn + textbox, buttom để gửi tin nhắn -->
+      <div id="right">
+        <div id="hello">NAME : <span id="nowUser"></span></div>
+        <div id="dsMsg"></div>
+        <div class="block"></div>
+        <input type="text" id="txtMessage" placeholder="Message..." />
+        <input type="button" id="btnChat" value="Send" />
+        <div id="icon2"><i class='glyphicon glyphicon-thumbs-up'></i></div>
+        <div id="icon1"><i class='fa fa-heart'></i></div>
+      </div>
+    </div>
+
+    <!-- GIAO DIỆN ĐĂNG NHẬP -->
+    <div id="register">
+      <h1>REGISTER USERNAME</h1>
+      <div id="mid">
+        <!-- gồm textbox để điền tên đăng kí -->
+        <input type="text" id="txtUser" placeholder="Username" />
+        <!-- Nút buttom để gửi yếu cầu -->
+        <input type="button" id="btnSigned" value="Signed in"  />
+      </div>
+    </div>
+
+    <!-- GIAO DIỆN CHỌN PHÒNG -->
+    <div id="room">
+      <h1>SELECT</h1>
+      <div id="mid1">
+        <!-- text box để chọn phòng -->
+        <input type="text" id="txtRoom" placeholder="Room Name" />
+        <!-- buttom để gửi yêu cầu tham gia phòng -->
+        <input type="button" id="btnCreate" value="Create or Choose"  />
+        <!-- Danh sách phòng đang online -->
+        <div id="titleRoom">Rooms Online</div>
+        <div id="listRoomsOnline"></div>
+      </div>
+    </div>
+
+</body>
+</html>
